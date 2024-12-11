@@ -190,30 +190,3 @@ social_media_analyzer/
 6. Social media API integrations
 7. Batch processing capabilities
 8. Export and reporting features
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-### Development Guidelines
-- Follow PEP 8 style guide
-- Write unit tests for new features
-- Document code changes
-- Update requirements.txt as needed
-
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgments
-
-- OpenAI for GPT API
-- Hugging Face for transformer models
-- VADER sentiment analysis
-- Streamlit for the frontend framework
-- spaCy and NLTK for NLP capabilities
-- BERTopic and KeyBERT for advanced text analysis
