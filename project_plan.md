@@ -329,31 +329,6 @@ if __name__ == "__main__":
 4. Create export functionality
 5. Add batch analysis capabilities
 
-## Testing Strategy
-```python
-# test_analyzer.py
-def test_basic_metrics():
-    analyzer = TweetAnalyzer()
-    tweet = "This is a test tweet! #test @user https://example.com"
-    metrics = analyzer.get_basic_metrics(tweet)
-    
-    assert metrics['word_count'] == 7
-    assert metrics['char_count'] == len(tweet)
-    assert len(metrics['hashtags']) == 1
-    assert len(metrics['mentions']) == 1
-    assert len(metrics['urls']) == 1
-
-# test_llm.py
-def test_llm_response():
-    llm = LLMManager()
-    response = llm.get_analysis_explanation(
-        {"sentiment_score": 0.8},
-        "Why is this tweet positive?"
-    )
-    assert isinstance(response, str)
-    assert len(response) > 0
-```
-
 ## Setup Instructions
 
 1. Environment Setup
