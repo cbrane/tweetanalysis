@@ -3,7 +3,9 @@
 ## Vision & Purpose
 This Social Media Analysis Chatbot is an educational tool designed to bridge the gap between complex social media analytics and practical understanding. Born from the need to make social media analysis more accessible and educational, this project combines state-of-the-art NLP techniques with interactive learning features to help users not just analyze their social media content, but truly understand what the metrics mean and how to improve their social media presence.
 
-View a demo video of the application here: https://drive.google.com/file/d/1spQRMFSUwkZaLOjxnbq2E-fyKJFFtild/view?usp=sharing
+## 🎥 Demo Video
+Watch a demonstration of the application in action:  
+[View Demo Video](https://drive.google.com/file/d/1spQRMFSUwkZaLOjxnbq2E-fyKJFFtild/view?usp=sharing)
 
 ### Why This Project?
 - **Educational Focus**: Traditional social media analytics tools provide metrics but often lack explanations. Our tool focuses on teaching users what these metrics mean and how to use them effectively.
