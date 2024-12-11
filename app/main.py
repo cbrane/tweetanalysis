@@ -1,13 +1,22 @@
+"""
+Social Media Analysis Chatbot - Main Application
+
+This module serves as the main entry point for the Streamlit-based social media
+analysis application. It provides an interactive interface for analyzing social
+media posts, displaying results, and providing educational content.
+
+The application combines multiple analysis components including sentiment analysis,
+linguistic analysis, and engagement metrics, presented through an intuitive
+user interface.
+"""
+
 import warnings
 import os
 import logging
-from datetime import datetime
 import streamlit as st
 from analyzer import TweetAnalyzer
 from llm_manager import LLMManager
 from educational import EducationalFeatures
-from typing import List, Tuple
-from collections import Counter
 
 # Configure logging to suppress specific messages
 logging.getLogger("torch.classes").setLevel(logging.ERROR)
@@ -30,16 +39,30 @@ if hasattr(logging, "getLogger"):
 
 
 def initialize_session_state():
-    """Initialize session state variables"""
+    """
+    Initialize Streamlit session state variables.
+
+    Sets up persistent state variables for storing chat history,
+    analysis results, and other session-specific data.
+    """
     if "messages" not in st.session_state:
         st.session_state.messages = []
     if "current_analysis" not in st.session_state:
         st.session_state.current_analysis = None
 
 
-def display_analysis_results(analysis_results):
-    """Display analysis results with interactive elements"""
+def display_analysis_results(analysis_results: dict):
+    """
+    Display analysis results with interactive elements.
 
+    Creates an organized display of analysis results using Streamlit
+    components, with expandable sections for different types of analysis.
+
+    Args:
+        analysis_results: Dictionary containing complete analysis results
+                        including basic metrics, sentiment analysis, and
+                        linguistic analysis.
+    """
     # Create a container for all analysis content
     with st.container():
         st.subheader("Analysis Results")
@@ -110,9 +133,18 @@ def display_analysis_results(analysis_results):
                     st.error("This tweet has a very negative tone 😟")
 
 
-def display_advanced_analysis(analysis_results):
-    """Display advanced analysis results"""
+def display_advanced_analysis(analysis_results: dict):
+    """
+    Display advanced analysis results with detailed explanations.
 
+    Creates expandable sections for detailed sentiment analysis,
+    linguistic analysis, and content analysis with interactive
+    visualizations and explanations.
+
+    Args:
+        analysis_results: Dictionary containing complete analysis results
+                        including advanced metrics and detailed scores.
+    """
     # Sentiment Analysis Details
     with st.expander("Detailed Sentiment Analysis", expanded=True):
         st.subheader("Multi-Model Sentiment Analysis")
@@ -466,16 +498,25 @@ def display_metric_with_llm_option(
     educational: EducationalFeatures,
     tab: str,
 ):
-    """Display a metric with an option to get LLM explanation"""
-    # Initialize storage for LLM explanations in session state if it doesn't exist
+    """
+    Display a metric with an option to get LLM-powered explanation.
+
+    Args:
+        title: Display title for the metric
+        value: Current value of the metric (can be numeric or string)
+        description: Brief description of the metric
+        metric_name: Internal name of the metric for analysis
+        analysis_results: Complete analysis results for context
+        educational: EducationalFeatures instance for generating explanations
+        tab: Current tab name for context
+    """
+    # Initialize storage for LLM explanations if needed
     if "llm_explanations" not in st.session_state:
         st.session_state.llm_explanations = {}
 
-    # Create a container for the metric info and button
     metric_container = st.container()
 
     with metric_container:
-        # Display metric info in a horizontal layout
         col1, col2, col3 = st.columns([1, 2, 1])
 
         with col1:
@@ -483,40 +524,41 @@ def display_metric_with_llm_option(
         with col2:
             st.write(description)
         with col3:
-            # Generate a unique key for each button based on metric name, title, and tab
-            button_key = (
-                f"explain_{metric_name}_{tab}_{title.lower().replace(' ', '_')}"
-            )
+            button_key = f"explain_{metric_name}_{tab}_{title.lower().replace(' ', '_')}"
 
-            # Check if we already have an explanation for this metric
             if st.button(
-                (
-                    "Get More Info 🔍"
-                    if metric_name not in st.session_state.llm_explanations
-                    else "Update Info 🔄"
-                ),
+                "Get More Info 🔍" if metric_name not in st.session_state.llm_explanations
+                else "Update Info 🔄",
                 key=button_key,
                 use_container_width=True,
             ):
                 with st.spinner("Getting detailed analysis..."):
-                    explanation = educational.explain_metric(
-                        metric_name, float(value), analysis_results
-                    )
-                    # Store the explanation in session state
-                    st.session_state.llm_explanations[metric_name] = explanation
+                    try:
+                        # Convert value to float only for numeric metrics
+                        metric_value = (
+                            float(value) 
+                            if isinstance(value, (int, float)) or 
+                               (isinstance(value, str) and value.replace('.', '').isdigit())
+                            else value
+                        )
+                        
+                        explanation = educational.explain_metric(
+                            metric_name, metric_value, analysis_results
+                        )
+                        st.session_state.llm_explanations[metric_name] = explanation
+                    except Exception as e:
+                        st.error(f"Unable to analyze {title}: {str(e)}")
+                        return
 
-    # If we have an explanation for this metric, display it
+    # Display explanation if available
     if metric_name in st.session_state.llm_explanations:
         explanation = st.session_state.llm_explanations[metric_name]
-
-        # Display analysis in full width
-        st.markdown("---")  # Add separator
-
-        # Create expander without key parameter
+        
+        st.markdown("---")
+        
         with st.expander(f"Analysis of {explanation['name']}", expanded=True):
             st.write(explanation["analysis"])
 
-            # If there are interpretations, show them in full width
             if explanation.get("interpretation"):
                 st.markdown("#### Key Points")
                 for key, value in explanation["interpretation"].items():
@@ -527,19 +569,16 @@ def display_metric_with_llm_option(
                     else:
                         st.markdown(f"- **{key.title()}:** {value}")
 
-            # If there are components, list them in full width
             if explanation.get("components"):
                 st.markdown("#### Components Analyzed")
                 for component in explanation["components"]:
                     st.markdown(f"- {component}")
 
-        st.markdown("---")  # Add separator at the end
+        st.markdown("---")
 
 
-def display_educational_content(
-    educational: EducationalFeatures, analysis_results: dict
-):
-    """Display educational content and suggestions"""
+def display_educational_content(educational: EducationalFeatures, analysis_results: dict):
+    """Display educational content and suggestions for tweet improvement."""
     st.subheader("Learning Resources")
 
     # Add "Get All Explanations" button at the top
@@ -551,11 +590,17 @@ def display_educational_content(
         with st.spinner("Analyzing all metrics..."):
             all_explanations = {}
             for category in educational.metric_categories.keys():
+                # Skip Basic Metrics category
+                if category == "Basic Metrics":
+                    continue
                 for metric_name in educational.metric_categories[category].keys():
                     try:
                         value = educational.llm_manager._get_metric_value(
                             analysis_results, metric_name
                         )
+                        # Handle non-numeric values appropriately
+                        if isinstance(value, (list, tuple)):
+                            value = ", ".join(map(str, value))
                         explanation = educational.explain_metric(
                             metric_name, value, analysis_results
                         )
@@ -563,7 +608,6 @@ def display_educational_content(
                     except Exception as e:
                         st.error(f"Error analyzing {metric_name}: {str(e)}")
 
-            # Display all explanations
             for metric_name, explanation in all_explanations.items():
                 with st.expander(
                     f"{explanation['name']} Analysis",
@@ -572,10 +616,9 @@ def display_educational_content(
                 ):
                     st.write(explanation["analysis"])
 
-    # Create tabs for different aspects of the analysis
+    # Create tabs for different aspects of the analysis (excluding Basic Metrics)
     metric_tabs = st.tabs(
         [
-            "Basic Metrics",
             "Sentiment Analysis",
             "Linguistic Analysis",
             "Content Analysis",
@@ -584,60 +627,8 @@ def display_educational_content(
         ]
     )
 
-    # Basic Metrics Tab
-    with metric_tabs[0]:
-        st.write("### Understanding Your Tweet's Basic Structure")
-
-        # Word Count Analysis
-        word_count = analysis_results["basic_metrics"]["word_count"]
-        display_metric_with_llm_option(
-            "Word Count",
-            word_count,
-            "Number of words in the tweet",
-            "word_count",
-            analysis_results,
-            educational,
-            tab="basic",
-        )
-
-        # Character Count
-        char_count = analysis_results["basic_metrics"]["char_count"]
-        display_metric_with_llm_option(
-            "Character Count",
-            char_count,
-            "Total number of characters",
-            "char_count",
-            analysis_results,
-            educational,
-            tab="basic",
-        )
-
-        # Unique Words
-        unique_words = analysis_results["basic_metrics"]["unique_words"]
-        display_metric_with_llm_option(
-            "Unique Words",
-            unique_words,
-            "Diversity of vocabulary used",
-            "unique_words",
-            analysis_results,
-            educational,
-            tab="basic",
-        )
-
-        # Sentence Count
-        sentence_count = analysis_results["basic_metrics"]["sentence_count"]
-        display_metric_with_llm_option(
-            "Sentence Count",
-            sentence_count,
-            "Number of sentences in the tweet",
-            "sentence_count",
-            analysis_results,
-            educational,
-            tab="basic",
-        )
-
     # Sentiment Analysis Tab
-    with metric_tabs[1]:
+    with metric_tabs[0]:
         st.write("### Understanding Emotional Impact")
 
         # Overall Sentiment Score
@@ -680,17 +671,19 @@ def display_educational_content(
         )
 
     # Linguistic Analysis Tab
-    with metric_tabs[2]:
+    with metric_tabs[1]:
         st.write("### Understanding Language Structure")
 
         # Parts of Speech Distribution
         pos_dist = analysis_results["linguistic_analysis"]["pos_distribution"]
         for pos, value in pos_dist.items():
+            # Use a standardized metric name format for POS tags
+            metric_name = f"linguistic_pos_{pos.lower()}"
             display_metric_with_llm_option(
                 f"{pos} Usage",
                 f"{value:.2f}",
                 f"Frequency of {pos} in the text",
-                f"pos_{pos.lower()}",
+                metric_name,
                 analysis_results,
                 educational,
                 tab="linguistic",
@@ -702,7 +695,7 @@ def display_educational_content(
             "Readability Score",
             readability,
             "How easy the text is to read",
-            "readability_score",
+            "linguistic_readability",
             analysis_results,
             educational,
             tab="linguistic",
@@ -714,21 +707,21 @@ def display_educational_content(
             "Formality Score",
             formality,
             "Level of formal language used",
-            "formality_score",
+            "linguistic_formality",
             analysis_results,
             educational,
             tab="linguistic",
         )
 
     # Content Analysis Tab
-    with metric_tabs[3]:
+    with metric_tabs[2]:
         st.write("### Understanding Content Quality")
 
-        # Topic Categories
+        # Topic Categories - handle as string
         topics = ", ".join(analysis_results["content_analysis"]["topic_category"])
         display_metric_with_llm_option(
             "Topic Categories",
-            topics,
+            topics,  # Pass as string directly
             "Main topics detected in the content",
             "topic_categories",
             analysis_results,
@@ -762,39 +755,57 @@ def display_educational_content(
         )
 
     # Engagement Metrics Tab
-    with metric_tabs[4]:
+    with metric_tabs[3]:
         st.write("### Understanding Engagement Potential")
 
+        # Main engagement metrics - only display these
         engagement = analysis_results["content_analysis"]["engagement_potential"]
+        
+        # Display only the main metrics, not the components
+        display_metric_with_llm_option(
+            "Virality Score",
+            engagement["virality_score"],
+            "Overall potential for content to be shared",
+            "virality_score",
+            analysis_results,
+            educational,
+            tab="engagement"
+        )
 
-        # Main engagement metrics
-        for metric, value in engagement.items():
-            if metric != "components":
-                display_metric_with_llm_option(
-                    metric.replace("_", " ").title(),
-                    value,
-                    f"Measure of {metric.replace('_', ' ')}",
-                    metric,
-                    analysis_results,
-                    educational,
-                    tab="engagement",
-                )
+        display_metric_with_llm_option(
+            "Call to Action Strength",
+            engagement["call_to_action_strength"],
+            "Effectiveness of prompting user action",
+            "call_to_action_strength",
+            analysis_results,
+            educational,
+            tab="engagement"
+        )
 
-        # Virality Components
-        if "components" in engagement:
-            for component, score in engagement["components"].items():
-                display_metric_with_llm_option(
-                    component.replace("_", " ").title(),
-                    score,
-                    f"Component of virality score",
-                    f"virality_{component}",
-                    analysis_results,
-                    educational,
-                    tab="engagement",
-                )
+        display_metric_with_llm_option(
+            "Emotional Appeal",
+            engagement["emotional_appeal"],
+            "Strength of emotional connection",
+            "emotional_appeal",
+            analysis_results,
+            educational,
+            tab="engagement"
+        )
+
+        # Content Density
+        density = analysis_results["content_analysis"]["content_density"]
+        display_metric_with_llm_option(
+            "Content Density",
+            density,
+            "Ratio of meaningful content to total content",
+            "content_density",
+            analysis_results,
+            educational,
+            tab="engagement"
+        )
 
     # Improvement Suggestions Tab
-    with metric_tabs[5]:
+    with metric_tabs[4]:
         st.write("### 📈 Areas for Improvement")
 
         # Identify weak points
@@ -827,112 +838,17 @@ def display_educational_content(
             )
 
 
-def display_thread_interface(analyzer: TweetAnalyzer, llm_manager: LLMManager):
-    """Display interface for thread analysis"""
-    if "thread_tweets" not in st.session_state:
-        st.session_state.thread_tweets = []
-        st.session_state.thread_analysis = None
-
-    # Display existing thread tweets
-    if st.session_state.thread_tweets:
-        st.write("### Current Thread")
-        for i, tweet in enumerate(st.session_state.thread_tweets, 1):
-            with st.expander(f"Tweet {i}", expanded=False):
-                st.write(tweet["content"])
-                if "analysis" in tweet:
-                    st.write("Quick stats:")
-                    st.write(
-                        f"- Sentiment: {tweet['analysis']['sentiment_analysis']['sentiment_score']:.2f}"
-                    )
-                    st.write(
-                        f"- Words: {tweet['analysis']['basic_metrics']['word_count']}"
-                    )
-
-    # Input for next tweet
-    next_tweet = st.text_area(
-        (
-            "Add next tweet in thread:"
-            if st.session_state.thread_tweets
-            else "Start thread with first tweet:"
-        ),
-        height=100,
-    )
-
-    col1, col2 = st.columns([1, 4])
-    with col1:
-        if st.button("Add Tweet"):
-            if next_tweet:
-                # Analyze the tweet
-                analysis = analyzer.analyze_tweet(next_tweet)
-                st.session_state.thread_tweets.append(
-                    {"content": next_tweet, "analysis": analysis}
-                )
-                # Clear the input area
-                st.rerun()
-
-    with col2:
-        if st.session_state.thread_tweets and st.button("Analyze Entire Thread"):
-            thread_analysis = analyze_thread(
-                st.session_state.thread_tweets, analyzer, llm_manager
-            )
-            st.session_state.thread_analysis = thread_analysis
-            st.rerun()
-
-
-def analyze_thread(
-    thread_tweets: List[dict], analyzer: TweetAnalyzer, llm_manager: LLMManager
-) -> dict:
-    """Analyze the entire thread as a whole"""
-    combined_text = " ".join([tweet["content"] for tweet in thread_tweets])
-    overall_analysis = analyzer.analyze_tweet(combined_text)
-
-    # Get thread-specific metrics
-    thread_metrics = {
-        "tweet_count": len(thread_tweets),
-        "avg_tweet_length": sum(len(tweet["content"]) for tweet in thread_tweets)
-        / len(thread_tweets),
-        "sentiment_progression": [
-            tweet["analysis"]["sentiment_analysis"]["sentiment_score"]
-            for tweet in thread_tweets
-        ],
-        "topic_consistency": analyze_topic_consistency(thread_tweets),
-        "engagement_potential": calculate_thread_engagement(thread_tweets),
-    }
-
-    return {
-        "overall_analysis": overall_analysis,
-        "thread_metrics": thread_metrics,
-        "individual_tweets": thread_tweets,
-    }
-
-
-def analyze_topic_consistency(thread_tweets: List[dict]) -> float:
-    """Analyze how consistent the topic remains throughout the thread"""
-    # Simple implementation - can be made more sophisticated
-    all_topics = [
-        topic
-        for tweet in thread_tweets
-        for topic in tweet["analysis"]["content_analysis"]["topic_category"]
-    ]
-    if not all_topics:
-        return 0.0
-
-    # Calculate consistency based on topic repetition
-    topic_counts = Counter(all_topics)
-    main_topic_count = topic_counts.most_common(1)[0][1]
-    return main_topic_count / len(all_topics)
-
-
-def calculate_thread_engagement(thread_tweets: List[dict]) -> float:
-    """Calculate potential engagement score for the entire thread"""
-    engagement_scores = [
-        tweet["analysis"]["content_analysis"]["engagement_potential"]["virality_score"]
-        for tweet in thread_tweets
-    ]
-    return sum(engagement_scores) / len(engagement_scores)
-
-
 def main():
+    """
+    Main application entry point.
+
+    Sets up the Streamlit interface, initializes components, and
+    manages the main application flow including:
+    - Tweet input and analysis
+    - Results display
+    - Educational content
+    - Chat interface
+    """
     st.title("Social Media Analysis Chatbot")
 
     # Initialize components
@@ -964,7 +880,7 @@ def main():
             analysis_results = analyzer.analyze_tweet(tweet_text)
             st.session_state.current_analysis = analysis_results
 
-    # Display analysis if we have results (either from button click or stored in session)
+    # Display analysis if we have results
     if (
         hasattr(st.session_state, "current_analysis")
         and st.session_state.current_analysis is not None
@@ -985,26 +901,6 @@ def main():
                 display_educational_content(
                     educational, st.session_state.current_analysis
                 )
-
-            # If thread is detected, show the thread option
-            if st.session_state.current_analysis["metadata"]["is_thread"]:
-                st.info(
-                    "🧵 This appears to be part of a thread! "
-                    + f"Detected indicators: {', '.join(st.session_state.current_analysis['metadata']['thread_indicators'])}",
-                    icon="🧵",
-                )
-                if st.button(
-                    "Analyze as Thread", type="secondary", use_container_width=True
-                ):
-                    st.session_state.thread_tweets = [
-                        {
-                            "content": tweet_text,
-                            "analysis": st.session_state.current_analysis,
-                        }
-                    ]
-                    st.rerun()
-    elif analyze_button and not tweet_text.strip():
-        st.warning("Please enter a tweet to analyze.")
 
     # Always show chat interface at the bottom
     st.markdown("---")

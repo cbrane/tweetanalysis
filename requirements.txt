@@ -2,8 +2,6 @@
 streamlit>=1.28.0
 openai>=1.3.0
 python-dotenv>=1.0.0
-pandas>=2.1.0
-numpy>=1.24.0
 
 # NLP and ML packages
 spacy>=3.7.2
@@ -22,3 +20,7 @@ sentence-transformers>=2.2.2
 # Text analysis utilities
 textstat>=0.7.3
 emot>=3.1
+
+# Additional dependencies for BERTopic
+umap-learn>=0.5.3
+hdbscan>=0.8.29

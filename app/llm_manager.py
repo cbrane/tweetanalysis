@@ -1,3 +1,11 @@
+"""
+LLM Manager Module
+
+This module manages interactions with the OpenAI GPT models for generating
+explanations and educational content. It handles prompt management and
+response generation for the social media analysis system.
+"""
+
 from openai import OpenAI
 import json
 import os
@@ -5,12 +13,37 @@ from dotenv import load_dotenv
 
 
 class LLMManager:
+    """
+    Manager for LLM-based content generation and analysis.
+
+    This class handles all interactions with OpenAI's models, managing prompts
+    and generating responses for various types of analysis and educational
+    content.
+
+    Attributes:
+        client: OpenAI client instance
+        system_prompts: Dictionary of predefined system prompts for different
+                       content types
+    """
+
     def __init__(self):
+        """
+        Initialize the LLM manager with OpenAI client and system prompts.
+
+        Loads environment variables and sets up the OpenAI client and
+        system prompts for different types of content generation.
+        """
         load_dotenv()
         self.client = OpenAI()
         self.load_system_prompts()
 
     def load_system_prompts(self):
+        """
+        Load predefined system prompts for different content types.
+
+        Initializes a dictionary of carefully crafted prompts that guide
+        the LLM's response style and content focus.
+        """
         self.system_prompts = {
             "analysis": """You are an educational social media analysis assistant.
             Explain metrics clearly and connect them to practical social media usage.
@@ -24,6 +57,17 @@ class LLMManager:
         }
 
     def get_analysis_explanation(self, metrics: dict, question: str) -> str:
+        """
+        Generate explanation for specific analysis metrics.
+
+        Args:
+            metrics: Dictionary of analysis metrics and their values
+            question: User's specific question about the analysis
+
+        Returns:
+            str: Detailed explanation addressing the user's question in the
+                context of the provided metrics
+        """
         messages = [
             {"role": "system", "content": self.system_prompts["analysis"]},
             {
@@ -34,7 +78,7 @@ class LLMManager:
         ]
 
         response = self.client.chat.completions.create(
-            model="gpt-4",  # Using GPT-4 instead of GPT-4o
+            model="gpt-4o",
             messages=messages,
             temperature=0.7
         )
@@ -42,7 +86,16 @@ class LLMManager:
 
     def get_educational_content(self, prompt: str, content_type: str) -> str:
         """
-        Get educational content based on prompt and content type
+        Generate educational content based on prompt and content type.
+
+        Args:
+            prompt: Specific prompt for content generation
+            content_type: Type of educational content needed (e.g., "improvement",
+                        "explanation", "best_practices")
+
+        Returns:
+            str: Generated educational content tailored to the specified type
+                and prompt
         """
         messages = [
             {"role": "system", "content": self.system_prompts["educational"]},
@@ -50,7 +103,7 @@ class LLMManager:
         ]
         
         response = self.client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4o",
             messages=messages,
             temperature=0.7
         )
@@ -58,7 +111,13 @@ class LLMManager:
 
     def _get_relevant_metrics(self, focus_area: str) -> list:
         """
-        Get relevant metrics for a specific focus area
+        Get list of metrics relevant to a specific focus area.
+
+        Args:
+            focus_area: Area of analysis (e.g., "Writing Style", "Engagement")
+
+        Returns:
+            list: List of metric names relevant to the specified focus area
         """
         metric_mapping = {
             "Writing Style": ["sentiment_score", "content_density", "formality_score"],
@@ -69,7 +128,14 @@ class LLMManager:
 
     def _get_metric_value(self, analysis_results: dict, metric: str) -> float:
         """
-        Safely extract metric value from analysis results
+        Safely extract metric value from analysis results.
+
+        Args:
+            analysis_results: Dictionary containing all analysis results
+            metric: Name of the metric to extract
+
+        Returns:
+            float: Value of the requested metric, or 0.0 if not found
         """
         try:
             if metric in analysis_results.get('sentiment_analysis', {}):
